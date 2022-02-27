@@ -14,7 +14,7 @@ namespace Factory_VR
 
         public string name;
         public int JointNumber;
-
+        public Quaternion[,] Exit;
         public string path ;
 
         public string dir = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
@@ -44,7 +44,7 @@ namespace Factory_VR
 
             //Cria uma pasta para o Robô
             string diraux = dir + @"\"+ name;
-            Debug.Log(diraux);
+            //Debug.Log(diraux);
             // If directory does not exist, create it
             if (!Directory.Exists(diraux))
             {
@@ -52,7 +52,7 @@ namespace Factory_VR
             }
 
             dirProgs  = diraux + @"\Programs";
-            Debug.Log(dirProgs);
+            //Debug.Log(dirProgs);
             // If directory does not exist, create it
             if (!Directory.Exists(dirProgs))
             {
@@ -71,7 +71,7 @@ namespace Factory_VR
         {
             for (int i = 0; i < JointNumber; i++)
             {
-                Debug.Log(Robot_Obj[i].transform.localEulerAngles.z);
+               // Debug.Log(Robot_Obj[i].transform.localEulerAngles.z);
             }
         }
         //Executa Inicializações do Robô
@@ -124,7 +124,6 @@ namespace Factory_VR
             
         }
 
-
         //Retorna o valor da posição x,y,z do endEffector
         public Vector3 GetEndEffectorPosition()
         {
@@ -154,7 +153,6 @@ namespace Factory_VR
                 fs.Write(title, 0, title.Length);               
             }
         }
-
 
         //Escreve uma linha com um ponto em Quaternion em um arquivo
         public void WriteProgram(Quaternion[] Point, string programName)
@@ -209,16 +207,12 @@ namespace Factory_VR
                     pos2file = pos2file + JointAngle[i].ToString() + ";";
                 else
                     pos2file = pos2file + JointAngle[i].ToString();
-                Debug.Log(pos2file);
+               // Debug.Log(pos2file);
             }               
 
             //Debug.Log(Pos);
             return Pos;
         }
-
-        //Move de forma imediata o robô para a posição Inicial do Programa
-       
-
 
         //Decodifica o Arquivo de Programa
         public Quaternion[,] SplitFileString(string file)
@@ -256,6 +250,7 @@ namespace Factory_VR
         //Converte String para Quaternion
         public static Quaternion StringToQuaternion(string sQuaternion)
         {
+
             // Remove the parentheses
             if (sQuaternion.StartsWith("(") && sQuaternion.EndsWith(")"))
             {
@@ -267,33 +262,36 @@ namespace Factory_VR
 
             // store as a Vector3
             Quaternion result = new Quaternion(
-                float.Parse(sArray[0]),
-                float.Parse(sArray[1]),
-                float.Parse(sArray[2]),
-                float.Parse(sArray[3]));
+                float.Parse(sArray[0],CultureInfo.InvariantCulture),
+                float.Parse(sArray[1],CultureInfo.InvariantCulture),
+                float.Parse(sArray[2],CultureInfo.InvariantCulture),
+                float.Parse(sArray[3],CultureInfo.InvariantCulture));
 
+            Debug.Log(result);
             return result;
         }
 
-        public void SetRobotToPositionNOW(string file, float speed)
+        //Move o Robô para a posição desejada no programa
+        public void SetRobotToPositionNOW(string file, int line, float speed)
         {
 
             string path = dirProgs + @"\" + file + @".txt";
             var lineCount = File.ReadAllLines(path).Length;
             Quaternion[,] ReadJoint = new Quaternion[lineCount, 6];
             ReadJoint = SplitFileString(file);
-
-            float step = speed * Time.deltaTime;
-            for(int i = 0; i<4; i++)
+            Exit = ReadJoint;
+            //Quaternion A = new Quaternion(-0.6904554f, -0.1525497f, -0.1525497f, 0.6904554f);
+            for(int i = 0; i < JointNumber ;i++)
             {
-                for (int j = 0; j < ReadJoint.GetUpperBound(0); j++)
-                {
-                    Robot_Obj[j].transform.rotation = Quaternion.RotateTowards(ReadJoint[i, j], ReadJoint[i, j + 1], step);
-                }
+                Robot_Obj[i+1].transform.localRotation = Quaternion.RotateTowards(Robot_Obj[i].transform.localRotation, ReadJoint[3, i], speed * Time.deltaTime);
+                // Debug.Log(Robot_Obj[3].transform.rotation);
+                Debug.Log("Junta" + i+ ":"+ReadJoint[3, i]);
+                // Debug.Log(speed*Time.deltaTime);
             }
-               
 
+
+
+            }
         }
-    }
 }
 

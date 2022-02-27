@@ -11,6 +11,7 @@ namespace Factory_VR
         public Robot MH24 = new Robot("MH24", 6);
         public float[] ZeroJoint = { 0,0,0,0,0,0,0};
         private int i = 0;
+        public float speed = 20;
         // Start is called before the first frame update
         void Start()
         {
@@ -20,9 +21,9 @@ namespace Factory_VR
         // Update is called once per frame
         void Update()
         {
-            MH24.Selection();
-            MH24.Manipulate();
-
+            //MH24.Selection();
+            //MH24.Manipulate();
+            MH24.SetRobotToPositionNOW("P1", 1, speed );
 
             if (Input.GetKeyDown(KeyCode.K))
             {
@@ -43,10 +44,10 @@ namespace Factory_VR
                 MH24.PrintJointTest();
             }
 
-            if (Input.GetKeyDown(KeyCode.E))
-            {           
+            //if (Input.GetKeyDown(KeyCode.E))
+            //{           
                
-              MH24.SetRobotToPositionNOW("P1",0.01f); 
+              
                 //Quaternion[,] Output = MH24.SplitFileString("P1");
                 //for (int i = 0; i <= Output.GetUpperBound(0); i++)
                 //{
@@ -57,7 +58,7 @@ namespace Factory_VR
                 //}
                 //Debug.Log(Output);
                 // MH24.MoveProgram(strinProgramName);
-            }
+            //}
         }
         
         void OnGUI()

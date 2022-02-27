@@ -62,6 +62,7 @@
      <Compile Include="Assets\Scripts\ExampleScript.cs" />
      <Compile Include="Assets\Scripts\Robot.cs" />
      <Compile Include="Assets\Scripts\UI_Functions.cs" />
+     <Compile Include="Assets\TesteRot.cs" />
      <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\Benchmark01.cs" />
      <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\Benchmark01_UGUI.cs" />
      <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\Benchmark02.cs" />
