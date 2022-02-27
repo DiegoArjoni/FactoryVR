@@ -17,7 +17,7 @@ namespace Factory_VR
 
         public string path ;
 
-        public string dir = @"C:\Users\Diego Arjoni\Desktop\";
+        public string dir = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
         private string dirProgs = "";
         public GameObject[] RobotModel = new GameObject[7];
         public GameObject[] Robot_Obj = new GameObject[7];        
@@ -35,6 +35,7 @@ namespace Factory_VR
 
         private int RobotJoint = 1;
 
+        //Classe para construir robôs Industriais 6DoF esféricos
         public Robot(string _name, int _JointNumber)
         {
             
@@ -42,12 +43,12 @@ namespace Factory_VR
             JointNumber = _JointNumber+1;
 
             //Cria uma pasta para o Robô
-            string diraux = dir + _name;
+            string diraux = dir + @"\"+ name;
             Debug.Log(diraux);
             // If directory does not exist, create it
-            if (!Directory.Exists(dir))
+            if (!Directory.Exists(diraux))
             {
-                Directory.CreateDirectory(dir);
+                Directory.CreateDirectory(diraux);
             }
 
             dirProgs  = diraux + @"\Programs";
@@ -59,21 +60,17 @@ namespace Factory_VR
             }
 
             FileStream stream = new FileStream(dirProgs + @"\ini.txt", FileMode.OpenOrCreate);
-
             StreamWriter RobotWriter = new StreamWriter(stream);
-            RobotWriter.Write("Yawskawa MH24 Prog0");
+            RobotWriter.Write(name);
             RobotWriter.WriteLine();
             RobotWriter.Write("Welcome");
             RobotWriter.Close();
-
-
         }
 
         public void PrintJointTest()
         {
             for (int i = 0; i < JointNumber; i++)
             {
-
                 Debug.Log(Robot_Obj[i].transform.localEulerAngles.z);
             }
         }
@@ -88,7 +85,7 @@ namespace Factory_VR
             JointAngle = ZeroJoint;
         }
 
-        //Rotina de Animação de Seleção de Jnunta
+        //Rotina de Animação de Seleção de Junnta
         public void Selection() //Select a Joint and Show in Green
         {
             if (Input.GetKeyDown(KeyCode.UpArrow))
@@ -156,7 +153,6 @@ namespace Factory_VR
                 Byte[] title = new UTF8Encoding(true).GetBytes("ProgramYaskawa");
                 fs.Write(title, 0, title.Length);               
             }
-
         }
 
 
@@ -164,12 +160,10 @@ namespace Factory_VR
         public void WriteProgram(Quaternion[] Point, string programName)
         {           
             programName = dirProgs + programName;
-            Debug.Log(programName);
-            
+            //Debug.Log(programName);          
                        
             try
-            {
-               
+            {               
                 string Pos = "";
                 for (int i = 0; i < JointNumber; i++)
                 {
@@ -183,34 +177,15 @@ namespace Factory_VR
                 using (StreamWriter fs = File.AppendText(programName))
                 {
                     fs.WriteLine(Pos);
-                    Debug.Log("Escrito");
-                }
-            
+                   // Debug.Log("Escrito");
+                }           
                 
             }
             catch (Exception Ex)
             {
                 Console.WriteLine(Ex.ToString());
-            }
-
-
-
-
-
-
-
-
-
-            // FileStream stream = new FileStream(dirProgs + @"\Program1.txt", FileMode.OpenOrCreate);
-
-           // File.Create(dirProgs + programName);
-
-           // StreamWriter RobotWriter = new StreamWriter(stream);
-
-           // RobotWriter.Write("P [{1:F}] ", ProgramEmptyLine+1);
-
-            
-             }
+            }           
+        }
         
         //Apaga o arquiuvo de Prgrama
         public void CleanProgram()
@@ -235,44 +210,47 @@ namespace Factory_VR
                 else
                     pos2file = pos2file + JointAngle[i].ToString();
                 Debug.Log(pos2file);
-            }
-                
+            }               
 
             //Debug.Log(Pos);
             return Pos;
         }
-        
-        //Move de forma imediata o robô para a posição Inicial do Programa
-        public void SetRobotToPositionNOW()
-        {
-            Quaternion[] ReadJoint = new Quaternion[7];
-            ReadJoint = SplitFileString();
 
-            for (int i = 0; i < JointNumber; i++)
-            {
-                Robot_Obj[i].transform.localRotation = ReadJoint[i];
-            }
-        }
+        //Move de forma imediata o robô para a posição Inicial do Programa
+       
 
 
         //Decodifica o Arquivo de Programa
-        public Quaternion[] SplitFileString()
+        public Quaternion[,] SplitFileString(string file)
         {
-            StreamReader reader = new StreamReader(path);
-            Quaternion[] ReadJoint = new Quaternion[7];
+            
+            string path = dirProgs+ @"\"+ file + @".txt";
+            int j;
+            
+            string[] JointStrings = new string[1000];
+            int i = 1;
+            StreamReader reader = new StreamReader(path);    
 
-
-            string[] JointStrings = reader.ReadLine().Split('|');
-
-            for (int i = 0; i < JointNumber; i++)
+            JointStrings[0] = reader.ReadLine();
+            while (JointStrings[i-1] != null)
             {
-                ReadJoint[i] = StringToQuaternion(JointStrings[i]);
-                
+                JointStrings[i] = reader.ReadLine();                
+                i++;                
             }
+            int progSize = i - 1;           
+           
+            Quaternion[,] ReadJoint = new Quaternion[progSize,JointNumber];
 
-
-
+            for (i = 0; i <= progSize-1; i++)
+            {
+                string[]  sArray = JointStrings[i].Split(';');              
+                for (j = 0; j < JointNumber; j++)
+                {
+                    ReadJoint[i, j] = StringToQuaternion(sArray[j]); 
+                }
+            }
             return ReadJoint;
+          
         }
 
         //Converte String para Quaternion
@@ -297,7 +275,25 @@ namespace Factory_VR
             return result;
         }
 
+        public void SetRobotToPositionNOW(string file, float speed)
+        {
 
+            string path = dirProgs + @"\" + file + @".txt";
+            var lineCount = File.ReadAllLines(path).Length;
+            Quaternion[,] ReadJoint = new Quaternion[lineCount, 6];
+            ReadJoint = SplitFileString(file);
+
+            float step = speed * Time.deltaTime;
+            for(int i = 0; i<4; i++)
+            {
+                for (int j = 0; j < ReadJoint.GetUpperBound(0); j++)
+                {
+                    Robot_Obj[j].transform.rotation = Quaternion.RotateTowards(ReadJoint[i, j], ReadJoint[i, j + 1], step);
+                }
+            }
+               
+
+        }
     }
 }
 
