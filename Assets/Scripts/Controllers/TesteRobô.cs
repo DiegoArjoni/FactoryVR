@@ -11,7 +11,12 @@ namespace Factory_VR
         public Robot MH24 = new Robot("MH24", 6);
         public float[] ZeroJoint = { 0,0,0,0,0,0,0};
         private int i = 0;
-        public float speed = 20;
+        public float speed = 2;
+        public int flag1 = 0;
+        public int step;
+        public int j = 0;
+        public int test = 0;
+        int Run = 0;
         // Start is called before the first frame update
         void Start()
         {
@@ -19,21 +24,44 @@ namespace Factory_VR
         }
 
         // Update is called once per frame
-        void Update()
+        void FixedUpdate()
         {
-            //MH24.Selection();
-            //MH24.Manipulate();
-            MH24.SetRobotToPositionNOW("P1", 1, speed );
+            
+            MH24.Selection();
+            MH24.Manipulate();
+            if (Run == 1)
+            {
+                if (test != -1 || step != -1)
+                {
+                    if (step == 1)
+                    {
+                        j++;
+                        step = 0;
+                    }
+
+                    if (flag1 == 0)
+                    {
+                        test = MH24.SetRobotToPositionNOW("P3", j, speed);
+                        flag1 = 1;
+                    }
+                    else
+                        step = MH24.SetRobotToPosition("P3", j + 1, speed);
+                }
+                else
+                    Run = 0;
+            }
+                          
+
 
             if (Input.GetKeyDown(KeyCode.K))
             {
-                MH24.CreateProgram(@"\P1.txt");
+                MH24.CreateProgram(@"\P3.txt");
             }
 
             if (Input.GetKeyDown(KeyCode.P))
             {
                 MH24.PrintJointPosition();
-                MH24.WriteProgram(MH24.GetInstantJointPoint(), @"\P1.txt");
+                MH24.WriteProgram(MH24.GetInstantJointPoint(), @"\P3.txt");
                 //Debug.Log(MH24.GetInstantJointPoint());
                 //MH24.StoreJointPoint(MH24.GetInstantJointPoint());
                 // MH24.WriteProgram(MH24.GetInstantJointPoint());
@@ -44,21 +72,9 @@ namespace Factory_VR
                 MH24.PrintJointTest();
             }
 
-            //if (Input.GetKeyDown(KeyCode.E))
-            //{           
-               
-              
-                //Quaternion[,] Output = MH24.SplitFileString("P1");
-                //for (int i = 0; i <= Output.GetUpperBound(0); i++)
-                //{
-                //    for (int j = 0; j <= Output.GetUpperBound(1); j++)
-                //    {
-                //        Debug.Log("Valor[" + i +","+j+"]: "+ Output[i,j]);
-                //    }
-                //}
-                //Debug.Log(Output);
-                // MH24.MoveProgram(strinProgramName);
-            //}
+            if (Input.GetKeyDown(KeyCode.E))
+                Run = 1;
+            
         }
         
         void OnGUI()
