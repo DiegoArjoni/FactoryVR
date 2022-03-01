@@ -12,32 +12,34 @@ namespace Factory_VR
     public class Robot
     {
 
-        public string name;
-        public int JointNumber;
-        public Quaternion[,] Exit;
-        public string path;
+        public string name;  // Contrutor 1
+        public int JointNumber; //Construtor 2
 
         public string dir = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
-        private string dirProgs = "";
-        public GameObject[] RobotModel = new GameObject[7];
-        public GameObject[] Robot_Obj = new GameObject[7];
-        public Quaternion[] Joints = new Quaternion[7];
-        public float[] JointsFrom = new float[7];
-        public float[] JointsTo = new float[7];
+
+        public GameObject[] RobotModel;
+        public GameObject[] Robot_Obj;
+        public float[] DH_a;
+        public float[] DH_alpha;
+        public float[] DH_d;
+        public float[] DH_theta;
+
+        public Quaternion[] Joints;
+
         public Material SelectedMaterial;
         public Material NormalMaterial;
-        public float jointSpeed = 1f;
-        public float[] ZeroJoint = new float[7];
-        public float[] JointAngle = new float[7];
-        public float[] JointsTest = new float[7];
-        public float[,] Program = new float[999, 7];
-        public int ProgramEmptyLine = 0;
-        public float[] QuaternionDistance = new float[7];
 
+        public float jointSpeed = 1f;
+        public float[] ZeroJoint;
+        public float[] JointAngle;
+        public float deltaSlerp = 0.01f;
+        public float speedSlerp = 0;
+        public float[] Difference;
 
         private int RobotJoint = 1;
+        private Quaternion[,] ReadJoint; //Programa Carregado [Linha do Programa ;  Junta]
+        private string dirProgs = "";
 
-        public float[] Difference;
 
         //Classe para construir robôs Industriais 6DoF esféricos
         public Robot(string _name, int _JointNumber)
@@ -143,7 +145,6 @@ namespace Factory_VR
             {
                 JointGroup[i] = Robot_Obj[i].transform.localRotation;
             }
-
             return JointGroup;
         }
 
@@ -152,34 +153,33 @@ namespace Factory_VR
             programName = dirProgs + programName;
             using (FileStream fs = File.Create(programName))
             {
-                // Add some text to file    
                 Byte[] title = new UTF8Encoding(true).GetBytes("ProgramYaskawa");
                 fs.Write(title, 0, title.Length);
             }
+
+
+
         }
 
         //Escreve uma linha com um ponto em Quaternion em um arquivo
         public void WriteProgram(Quaternion[] Point, string programName)
         {
             programName = dirProgs + programName;
-            //Debug.Log(programName);          
-
             try
             {
                 string Pos = "";
                 for (int i = 0; i <= JointNumber; i++)
                 {
                     if (i < JointNumber)
-                        Pos = Pos + Point[i].ToString("G") + ";";
+                        Pos += Point[i].ToString("G") + ";";
                     else
-                        Pos = Pos + Point[i].ToString();
+                        Pos += Point[i].ToString("G");
                 }
 
                 // Create a new file     
                 using (StreamWriter fs = File.AppendText(programName))
                 {
                     fs.WriteLine(Pos);
-                    // Debug.Log("Escrito");
                 }
 
             }
@@ -190,10 +190,10 @@ namespace Factory_VR
         }
 
         //Apaga o arquiuvo de Prgrama
-        public void CleanProgram()
+        public void CleanProgram(string file)
         {
+            string path = dirProgs + @"\" + file + @".txt"; // Utiliz a variável global de progrmas para encontrar o caminho desejado
             FileStream fileStream = File.Open(path, FileMode.Open);
-
             fileStream.SetLength(0);
             fileStream.Close();
         }
@@ -210,8 +210,8 @@ namespace Factory_VR
                 if (i != JointNumber)
                     pos2file = pos2file + JointAngle[i].ToString() + ";";
                 else
-                    pos2file = pos2file + JointAngle[i].ToString();             
-            }           
+                    pos2file = pos2file + JointAngle[i].ToString();
+            }
             return Pos;
         }
 
@@ -232,7 +232,7 @@ namespace Factory_VR
             }
             int progSize = i - 1;
 
-            Quaternion[,] ReadJoint = new Quaternion[progSize, JointNumber+1];
+            Quaternion[,] ReadJoint = new Quaternion[progSize, JointNumber + 1];
 
             for (i = 0; i <= progSize - 1; i++)
             {
@@ -265,44 +265,11 @@ namespace Factory_VR
             return result;
         }
 
-        public float[] CalculateQuaternionDistance(Quaternion[,] A, int JointNumber, int index)
+        //Move o Robô para a posição desejada no programa Imediatamente
+        public int SetRobotToPositionNOW(int line)
         {
-            float[] QuaternionDistance = new float[JointNumber + 1];
-            float[] SpeedCoefficient = new float[JointNumber + 1];
-            float maxValue = 0;
-
-            for (int i = 0; i <= JointNumber; i++)
+            if (line < ReadJoint.GetUpperBound(0))
             {
-                QuaternionDistance[i] = Quaternion.Angle(A[index-1,i].normalized, A[index,i].normalized);
-                if (QuaternionDistance[i] > maxValue)
-                    maxValue = QuaternionDistance[i];
-                //Debug.Log("J"+ i + ":"+QuaternionDistance[i]);
-            }          
-
-            for (int i = 0; i <= JointNumber; i++)
-            {
-                SpeedCoefficient[i] = (QuaternionDistance[i] / maxValue);
-                //Debug.Log("J"+ i + ":"+SpeedCoefficient[i]);
-            }
-            return SpeedCoefficient;
-        }
-
-
-
-        //Move o Robô para a posição desejada no programa
-        public int SetRobotToPositionNOW(string file, int line, float speed)
-        {            
-            
-            string path = dirProgs + @"\" + file + @".txt";
-            var lineCount = File.ReadAllLines(path).Length;
-
-            if (line < lineCount)
-            {
-                Quaternion[,] ReadJoint = new Quaternion[lineCount, 7];
-                ReadJoint = SplitFileString(file);
-                Exit = ReadJoint;
-                float[] QuaternionDistance = new float[7];
-
                 for (int i = 0; i <= JointNumber; i++)
                 {
                     Robot_Obj[i].transform.localRotation = ReadJoint[line, i];
@@ -313,48 +280,26 @@ namespace Factory_VR
             {
                 return -1;
             }
-            
-          
+
+
 
         }//SetRobotToPositionNOW()
 
-        public int SetRobotToPosition(string file, int line, float speed)
+        public int SetRobotToPosition(int line, float speed)
         {
-
-
-            int flag = 0;
-            string path = dirProgs + @"\" + file + @".txt";
-            var lineCount = File.ReadAllLines(path).Length;
-            float[] speedVec = new float[JointNumber+1];
-
-            if (line < lineCount)
+            //Verifica se a linha poedida está dentro dos limites do programa
+            if (line < ReadJoint.GetUpperBound(0))
             {
-                Quaternion[,] ReadJoint = new Quaternion[lineCount, JointNumber+1];
-                ReadJoint = SplitFileString(file);
-                Exit = ReadJoint;
-                
-
-                QuaternionDistance = CalculateQuaternionDistance(ReadJoint, 6, line);
                 for (int i = 0; i <= JointNumber; i++)
                 {
-                    speedVec[i] = speed * QuaternionDistance[i];    
+                    speedSlerp += deltaSlerp;
+                    Robot_Obj[i].transform.localRotation = Quaternion.Slerp(ReadJoint[line, i], ReadJoint[line + 1, i], speedSlerp);
+                    Difference[i] = Quaternion.Angle(Robot_Obj[i].transform.localRotation, ReadJoint[line + 1, i]);
+                    if (speedSlerp > 1)
+                        break;
                 }
 
-                    for (int i = 0; i <= JointNumber; i++)
-                {
-                    Robot_Obj[i].transform.localRotation = Quaternion.RotateTowards(Robot_Obj[i].transform.localRotation, ReadJoint[line, i],  speedVec[i]);
-                    Difference[i] = Quaternion.Angle(Robot_Obj[i].transform.localRotation, ReadJoint[line, i]);
-
-                    if (Math.Abs(Quaternion.Angle(Robot_Obj[i].transform.localRotation, ReadJoint[line, i])) < 0.001)
-                    {
-                        flag++;
-                        Debug.Log(flag);
-                    }
-                }
-
-
-                //Debug.Log(flag);
-                if (flag == 7)
+                if (speedSlerp > 1)
                     return 1;
                 else
                     return 0;
@@ -364,6 +309,27 @@ namespace Factory_VR
         }//SetRobotToPosition()
 
 
+        //Carrega o programa na variável de programa 
+        public int LoadProgram(string file)
+        {
+            string path = dirProgs + @"\" + file + @".txt"; // Utiliz a variável global de progrmas para encontrar o caminho desejado
+            int lineCount = File.ReadAllLines(path).Length; //Conta as linhas do programa desejado
+            ReadJoint = SplitFileString(file); //Converte o arquivo desejado em uma matriz read Joits   
+            return lineCount;
+        }
+
+
+        public void SetRobotToJointAngle(float[] Angles)
+        {
+            
+            
+            for (int i = 0; i <= JointNumber; i++)
+            {
+                Quaternion Rot = Quaternion.Euler(DH_alpha[i], 0f, Angles[i]);                 
+                Robot_Obj[i].transform.localRotation = Rot;
+                JointAngle[i] = Angles[i];
+            }
+        } 
 
         //public void RunProgram(string file, float speed)
         //{

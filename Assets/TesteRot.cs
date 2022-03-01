@@ -23,7 +23,7 @@ public class TesteRot : MonoBehaviour
         step = speed*Time.deltaTime;
 
         // Rotate our transform a step closer to the target's.
-        Obj1.transform.rotation = Quaternion.RotateTowards(Obj1.transform.rotation, B, step);
+        Obj1.transform.rotation = Quaternion.Slerp(Obj1.transform.rotation, B, step);
         
 
         

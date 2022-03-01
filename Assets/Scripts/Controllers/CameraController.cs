@@ -16,7 +16,6 @@ namespace Factory_VR
         public float speed = 100f;
 
         private float xRotation = 0f;
-        private float yRotation = 0f;
         #endregion
 
         // Start is called before the first frame update
